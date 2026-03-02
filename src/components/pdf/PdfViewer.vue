@@ -294,7 +294,6 @@ defineExpose({ containerRef })
   <div
     ref="containerRef"
     class="relative h-full w-full overflow-y-auto"
-    :style="{ background: 'var(--color-bg-tertiary)' }"
   >
     <!-- Scroll content spacer -->
     <div

@@ -80,12 +80,21 @@ defineExpose({
   <div
     ref="containerRef"
     :class="containerClass"
+    :style="{ padding: '16px', gap: '8px', background: 'var(--color-bg-tertiary)' }"
   >
     <!-- Top / Left pane -->
     <div
       ref="leftPaneRef"
       class="overflow-y-auto overflow-x-hidden min-w-0 min-h-0"
-      :style="topPaneStyle"
+      :style="[
+        topPaneStyle,
+        {
+          background: 'var(--color-bg-secondary)',
+          boxShadow: 'var(--shadow-sm)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-lg)'
+        }
+      ]"
     >
       <slot name="left" />
     </div>
@@ -110,6 +119,12 @@ defineExpose({
     <div
       ref="rightPaneRef"
       class="overflow-y-auto overflow-x-hidden min-w-0 min-h-0 flex-1"
+      :style="{
+        background: 'var(--color-bg-secondary)',
+        boxShadow: 'var(--shadow-sm)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg)'
+      }"
     >
       <slot name="right" />
     </div>
@@ -123,25 +138,26 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 8px;
+  width: 12px;
   height: 100%;
   cursor: col-resize;
   transition: background var(--duration-fast) ease;
   z-index: 10;
+  border-radius: var(--radius-md);
 }
 
 .divider-handle:hover {
-  background: var(--color-highlight);
+  background: var(--color-border-light);
 }
 
 .divider-handle--vertical {
   width: 100%;
-  height: 8px;
+  height: 12px;
   cursor: row-resize;
 }
 
 .divider-handle--dragging {
-  background: var(--color-highlight);
+  background: var(--color-border-light);
 }
 
 .divider-line {

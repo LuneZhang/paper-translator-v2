@@ -286,7 +286,10 @@ watch(() => historyStore.sortedRecords, (records) => {
     />
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-hidden">
+    <main
+      class="flex-1 overflow-hidden"
+      :style="{ background: 'var(--color-bg-tertiary)' }"
+    >
       <!-- Empty State (no document loaded) -->
       <EmptyState
         v-if="!documentStore.hasDocument"

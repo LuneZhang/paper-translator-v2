@@ -227,9 +227,10 @@ function getOverlayStyle(para: TranslatedParagraph) {
   const scale = documentStore.scale
   const rect = para.boundingRect
   return {
-    top: `${(rect.top + rect.height) * scale + 2}px`,
-    left: `${Math.max(rect.left * scale - 2, 0)}px`,
-    maxWidth: `${rect.width * scale + 4}px`,
+    top: `${rect.top * scale - 2}px`, // Slight negative offset to cover ascenders
+    left: `${rect.left * scale - 2}px`, // Slight negative offset to cover left overhang
+    width: `${rect.width * scale + 4}px`, // Expand slightly to cover original fully
+    minHeight: `${rect.height * scale + 4}px`,
   }
 }
 
@@ -287,14 +288,12 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="flex flex-col h-full"
-    :style="{ background: 'var(--color-bg-tertiary)' }"
   >
     <!-- ─── Toolbar ─────────────────────────────────────────── -->
     <div
       class="flex items-center justify-between px-5 py-2.5 shrink-0"
       :style="{
         borderBottom: '1px solid var(--color-border)',
-        background: 'var(--color-bg-secondary)',
       }"
     >
       <!-- Font size controls -->
@@ -494,25 +493,31 @@ onBeforeUnmount(() => {
   position: absolute;
   z-index: 5;
   pointer-events: none;
-  border-left: 2.5px solid var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent-light) 60%, white);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  padding: 3px 8px 4px 8px;
-  line-height: 1.5;
+  background-color: #ffffff; /* Match PDF canvas background to hide original text */
+  padding: 0 1px; /* minimal padding just to avoid clipping at exact bounds */
   transition: opacity 0.2s ease;
+  display: flex;
+  align-items: flex-start;
+  box-sizing: border-box;
 }
 
+/* No background in dark mode, because PDF canvas remains white */
 .dark .immersive-block {
-  background: color-mix(in srgb, var(--color-accent-light) 80%, var(--color-bg-secondary));
+  background-color: #ffffff; 
 }
 
 .immersive-text {
-  color: var(--color-text-primary);
+  color: #000000; /* Academic papers usually use pure black */
   word-break: break-word;
+  text-align: justify; /* Professional justification like LaTeX */
+  font-family: 'Times New Roman', 'Noto Serif SC', 'STSong', serif; /* Serif font for academic look */
+  line-height: 1.45; /* Standard academic line height */
+  width: 100%;
 }
 
 .immersive-loading {
   padding: 2px 0;
+  width: 100%;
 }
 
 .immersive-error {
