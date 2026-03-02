@@ -85,38 +85,74 @@ export function useTranslation() {
   }
 
   /**
-   * Translate a single paragraph: protect formulas → API call → restore.
+   * Utility to wait for a given number of milliseconds
+   */
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+  /**
+   * Translate a single paragraph with automatic retries for 429 Too Many Requests
    */
   async function translateSingleParagraph(
     paragraph: PdfParagraph,
     context: { title?: string; abstract?: string },
     glossary: Record<string, string>,
+    retries = 3
   ): Promise<TranslatedParagraph> {
     const { cleanText, formulas } = protectFormulas(paragraph.text)
 
-    const response = await translateText({
-      text: cleanText,
-      context,
-      glossary,
-      engine: settingsStore.engine,
-      apiKey: settingsStore.apiKey,
-    })
+    let lastError: unknown
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        // Enforce a base delay between requests to avoid hitting rate limits too quickly
+        // 1.5 seconds delay allows ~40 requests per minute, well within Gemini's free tier
+        if (attempt === 0) {
+          await delay(1500)
+        }
 
-    const translatedText = restoreFormulas(response.translation, formulas)
+        const response = await translateText({
+          text: cleanText,
+          context,
+          glossary,
+          engine: settingsStore.engine,
+          apiKey: settingsStore.apiKey,
+        })
 
-    return {
-      id: `${paragraph.pageIndex}-${paragraph.index}`,
-      pageIndex: paragraph.pageIndex,
-      paragraphIndex: paragraph.index,
-      originalText: paragraph.text,
-      translatedText,
-      formulas: formulas.map((f) => ({
-        placeholder: f.placeholder,
-        original: f.original,
-      })),
-      boundingRect: { ...paragraph.boundingRect },
-      status: 'completed',
+        const translatedText = restoreFormulas(response.translation, formulas)
+
+        return {
+          id: `${paragraph.pageIndex}-${paragraph.index}`,
+          pageIndex: paragraph.pageIndex,
+          paragraphIndex: paragraph.index,
+          originalText: paragraph.text,
+          translatedText,
+          formulas: formulas.map((f) => ({
+            placeholder: f.placeholder,
+            original: f.original,
+          })),
+          boundingRect: { ...paragraph.boundingRect },
+          status: 'completed',
+        }
+      } catch (err: any) {
+        lastError = err
+        
+        // If it's a rate limit error (429) or quota error, apply exponential backoff
+        const errorMsg = err?.message || ''
+        if (errorMsg.includes('429') || errorMsg.includes('quota')) {
+          if (attempt < retries) {
+            // Wait 5s, then 10s, then 20s
+            const backoffDelay = 5000 * Math.pow(2, attempt)
+            console.warn(`[Rate Limit] 429 Too Many Requests. Retrying in ${backoffDelay / 1000}s...`)
+            await delay(backoffDelay)
+            continue
+          }
+        }
+        
+        // If it's another type of error, or we ran out of retries, throw it
+        throw err
+      }
     }
+    
+    throw lastError
   }
 
   // ── Public API ───────────────────────────────────────────
